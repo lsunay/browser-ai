@@ -6,250 +6,84 @@ A powerful browser extension that enables AI models to interact with and control
 
 While the underlying JavaScript has been made cross-browser compatible, this branch is currently configured to work **out-of-the-box only on Firefox**.
 
+## Core Concept: When to Use This Agent
+
+This extension is not a simple chatbot; it is a powerful **automation agent**. Its true value lies in executing dynamic, multi-step workflows that are impossible for standard chatbots.
+
+Think of it like this: using this agent to ask "What is the capital of France?" is like using a Formula 1 car to go to the grocery store. It's overkill and inefficient.
+
+**When is this agent NOT the right tool?**
+- For simple, single-step tasks like summarizing a page you already have open.
+- For answering general knowledge questions that don't require browser interaction.
+- With local models that have a small context window (e.g., 4k tokens).
+
+**When is this agent invaluable?**
+- For complex, multi-step tasks that require navigating websites, interacting with elements, and synthesizing information from multiple sources.
+- For automating workflows that you can describe but cannot easily script.
+
+**Example of a powerful use case:**
+> "Go to our company's sales dashboard, apply the 'Last 30 Days' filter, find the 'Total Revenue' figure, then navigate to our competitor's website, get the title of their latest blog post, and present both pieces of information to me in a summary."
+
+This is the kind of task where the agent's high token cost provides a massive return on investment by saving significant time and manual effort.
+
+## Considerations on Token Cost & Local Models
+
+This agent operates by sending a large amount of information to the AI model on **every request**. This information includes the system prompt, the conversation history, and—most significantly—the definitions for all **20+ available browser tools**.
+
+- **High Token Cost:** This context regularly consumes **3,500+ tokens** *before* your actual question is even added.
+- **Context Length is Critical:** For this reason, the agent is best suited for models with a large context window (e.g., 32k, 128k, or more).
+- **Challenges with Local Models:** Using models with a small context limit (e.g., 4k or 8k) will lead to issues. The context can fill up quickly, causing the model to lose track of the conversation or fail to respond, sometimes getting stuck in a loop of trying to re-gather information.
+
 ## Features
 
-### AI Provider Support
-- **OpenAI API**: GPT-4, GPT-4o, and other models
-- **Anthropic API**: Claude 3.5 Sonnet, Claude 3 Opus, and other models
-- **Custom Endpoints**: Any OpenAI-compatible API endpoint
-
-### Browser Automation Tools
-
-The AI has access to these powerful browser automation capabilities:
-
-#### Page Navigation & Content
-- `navigate` - Navigate to URLs
-- `goBack` / `goForward` - Browser history navigation
-- `refresh` - Reload pages
-- `getPageContent` - Extract text, HTML, title, URL, or links from pages
-- `screenshot` - Capture visible page area
-
-#### Page Interaction
-- `click` - Click elements using CSS selectors
-- `type` - Type text into input fields
-- `fillForm` - Fill multiple form fields at once
-- `scroll` - Scroll up, down, to top, or to bottom
-- `waitForElement` - Wait for elements to appear
-
-#### Tab Management
-- `openTab` - Open new tabs
-- `closeTab` - Close tabs
-- `switchTab` - Switch between tabs
-- `getAllTabs` - Get information about all open tabs
-
-#### Tab Groups
-- `createTabGroup` - Group tabs with title and color
-- `ungroupTabs` - Remove tabs from groups
-
-#### History Management
-- `searchHistory` - Search browser history for URLs matching text
-- `getRecentHistory` - Get recently visited pages
-- `deleteHistoryItem` - Delete specific URL from history
-- `deleteHistoryRange` - Delete history within time range
-- `getVisitCount` - Get visit count and details for a URL
-
-### Modern UI
 - **Tabbed Interface**: A clean UI with separate tabs for the interactive "Agent" and the analytical "Deep-Insight".
 - **Customizable Deep-Insight Prompts**: Configure, add, or delete your own one-click analysis prompts from the settings menu.
 - **Markdown Support**: AI responses are rendered with rich formatting (headings, lists, code blocks) for better readability.
 - **Settings Import/Export**: Backup and restore all your settings, including your custom Deep-Insight prompts, to a JSON file.
-- **Real-time status updates**
-- **Tool execution visibility**
+- **Cross-Browser Ready**: The core logic uses the `browser.*` namespace, making future support for Chrome straightforward.
 
 ## Installation (for Firefox)
 
 ### Prerequisites
 - **Mozilla Firefox** (version 112+)
-- An API key from OpenAI or Anthropic
+- An API key from an OpenAI-compatible provider.
 
 ### 1. Get the Code
-
-Clone or download this repository:
 ```bash
 git clone https://github.com/lsunay/browser-ai.git
 cd browser-ai
 ```
 
 ### 2. Install Dependencies
-
-This project uses `web-ext` for packaging. Install it via npm:
 ```bash
 npm install
 ```
 
 ### 3. Load the Extension in Firefox
-
-You can load the extension directly from the source code for testing.
-
-1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
+1. Navigate to `about:debugging#/runtime/this-firefox`.
 2. Click "Load Temporary Add-on...".
-3. Select the `manifest.json` file from the `browser-ai` directory.
+3. Select the `manifest.json` file from the project directory.
 
-The extension should now appear in your extensions list.
-
-**Note on Chrome:** To run this on Chrome, you would need to modify the `manifest.json` file to use `service_worker` and `side_panel` keys instead of `scripts` and `sidebar_action`.
+**Note on Chrome:** To run this on Chrome, you would need to modify the `manifest.json` file to use `service_worker` and `side_panel` keys and add the `"sidePanel"` permission.
 
 ## Development and Building
 
-### Running Tests
-The extension includes a validation suite to ensure reliability.
-```bash
-# Run all validation tests
-npm test
-```
-
 ### Building the Package for Firefox
-
-To create a distributable `.zip` file for Firefox (e.g., for submission to the Mozilla Add-ons store), run the build command:
+To create a distributable `.zip` file for Firefox, run the build command:
 ```bash
 npm run build
 ```
 The packaged extension will be created in the `web-ext-artifacts/` directory.
 
-## Configuration
-
-1. **Open the side panel** by clicking the Browser AI Agent icon in your browser's toolbar.
-2. **Click the settings icon** (gear icon in the top right).
-3. **Configure your AI provider:**
-
-   **For OpenAI:**
-   - Provider: OpenAI
-   - API Key: Your OpenAI API key (starts with `sk-`)
-   - Model: `gpt-4o` or `gpt-4-turbo` (recommended)
-
-   **For Anthropic:**
-   - Provider: Anthropic
-   - API Key: Your Anthropic API key
-   - Model: `claude-3-5-sonnet-20241022` (recommended)
-
-   **For Custom/Compatible APIs:**
-   - Provider: Custom (OpenAI Compatible)
-   - API Key: Your API key
-   - Model: Your model name
-   - Custom Endpoint: Your API endpoint URL (e.g., `http://localhost:8080/v1/chat/completions`)
-
-4. **Customize the system prompt** (optional).
-5. **Save settings**.
-
-## Usage
-
-Once configured, simply type your requests in the chat interface:
-
-- "Take a screenshot of this page"
-- "Navigate to google.com and search for 'AI news'"
-- "Find all the links on this page"
-- "Fill out the form with name: John Doe, email: john@example.com"
-- "Open the first 3 article links in new tabs and group them"
-- "Scroll down and click the 'Load More' button"
-
-## Architecture
-
-### File Structure
-
-```
-browser-ai/
-├── manifest.json              # Extension manifest (Manifest V3)
-├── background.js              # Background service worker/script
-├── content.js                 # Content script injected into pages
-├── package.json               # Project metadata & scripts
-├── sidepanel/
-│   ├── panel.html            # Side panel UI
-│   ├── panel.css             # Side panel styles
-│   └── panel.js              # Side panel logic & UI controller
-├── ai/
-│   └── provider.js           # AI provider integration (OpenAI/Anthropic)
-├── tools/
-│   └── browser-tools.js      # Browser automation tool implementations
-└── icons/
-    └── ...                   # Extension icons
-```
-
-### How It Works
-
-1. **User Input**: User types a message in the side panel.
-2. **Context Gathering**: Extension gathers current tab information.
-3. **AI Processing**: Message is sent to the configured AI provider with tool definitions.
-4. **Tool Execution**: If AI decides to use tools, they're executed via Browser APIs.
-5. **Response**: Results are sent back to AI, which provides a natural language response.
-6. **Display**: Response is shown to user in the chat interface.
-
-### Communication Flow
-
-```
-Side Panel (UI) ←→ Background Script ←→ AI Provider (OpenAI/Anthropic)
-                          ↓
-                   Browser Tools
-                          ↓
-                   Browser APIs ←→ Content Script ←→ Web Page
-```
-
-## API Specification
-
-All tools follow a standard schema compatible with OpenAI's function calling and Anthropic's tool use APIs. See the original `README.md` for the full tool API specification.
-
-## Browser APIs Used
-
-This extension leverages the following WebExtensions APIs:
-
-- **browser.sidePanel** / **browser.sidebarAction** - Side panel UI
-- **browser.tabs** - Tab management
-- **browser.tabGroups** - Tab grouping
-- **browser.scripting** - Script injection and DOM manipulation
-- **browser.storage** - Configuration persistence
-- **browser.runtime** - Message passing
-- **browser.history** - History access
-
-## Security & Privacy
-
-- **API keys are stored locally** in your browser's storage and never transmitted except to your configured AI provider.
-- **All tool executions require explicit AI decision** - the AI must decide to use each tool.
-- **No data collection** - this extension does not collect or transmit any user data except to your AI provider.
-- **Open source** - all code is visible and auditable.
-
-## Troubleshooting
-
-### Extension won't load
-- Make sure you're in Developer Mode (`chrome://extensions`) or have loaded it via `about:debugging` (Firefox).
-- Check the browser console for errors.
-- Verify all files are present in the directory.
-
-### Side panel doesn't open
-- Try clicking the extension icon.
-- Check if the extension is enabled.
-- Reload the extension from the browser's extension management page.
-
-### AI not responding
-- Verify your API key is correct.
-- Check your internet connection.
-- Open browser DevTools (F12) → Console tab to see errors.
-- Verify the model name is correct for your provider.
-
-## Testing
-
-The extension includes a validation suite to ensure reliability and correctness.
-
-### Running Validation
-
-```bash
-# Run all validation tests
-npm test
-```
-
-## Limitations
-
-- **Same-origin policy**: Some cross-origin interactions may be restricted.
-- **Dynamic content**: Heavy JavaScript sites may require waiting for elements.
-- **CAPTCHAs**: Cannot solve CAPTCHAs (by design).
-- **isTrusted events**: Some sites detect simulated events.
-- **Rate limits**: Subject to your AI provider's rate limits.
-
 ## Future Enhancements
 
-- [ ] Visual element selection tool
-- [ ] Recording and playback of action sequences
-- [ ] Screenshot analysis with vision-capable models
-- [ ] Bookmark management
-- [ ] Custom tool creation interface
+Potential features and optimizations for future versions:
+
+- **[Optimization] Smart Tool Selection:** A pre-processing step to analyze the user's prompt and send only the most relevant tools to the AI, drastically reducing token cost.
+- **[Optimization] Tool Definition Pruning:** Shortening the descriptions and parameter names in the tool definitions to save tokens.
+- **[UX] Conversation Management:** Add a "Clear Conversation" button to allow the user to manually reset the context.
+- **[Feature] Visual Element Selection:** A tool to allow the user to visually click on an element to select it.
+- **[Feature] Session Recording & Playback:** Record a sequence of actions and allow the AI to play them back.
 
 ## License
 
