@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Browser AI Agent",
-  "version": "1.0.14",
+  "version": "1.0.17",
   "description": "AI-powered browser automation with configurable LLM providers (OpenAI, Anthropic)",
   "permissions": [
     "scripting",
@@ -44,7 +44,7 @@
     }
   },
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://api.openai.com https://api.anthropic.com http://192.168.1.12:8080"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src https://* http://*"
   },
   "icons": {
     "16": "icons/icon16.png",

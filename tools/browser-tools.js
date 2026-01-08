@@ -37,39 +37,43 @@ export class BrowserTools {
   }
 
   getToolDefinitions() {
-    // This function returns the schema for the tools, it does not need changes.
-    // For brevity, its content is omitted here but remains in the actual file.
     return [
       { name: 'navigate', description: 'Navigate to a URL...', input_schema: { /*...*/ } },
-      { name: 'click', description: 'Click on an element...', input_schema: { /*...*/ } },
-      { name: 'type', description: 'Type text into an input field...', input_schema: { /*...*/ } },
-      { name: 'scroll', description: 'Scroll the page...', input_schema: { /*...*/ } },
-      { name: 'screenshot', description: 'Take a screenshot...', input_schema: { /*...*/ } },
-      { name: 'getPageContent', description: 'Get content from the page...', input_schema: { /*...*/ } },
-      { name: 'openTab', description: 'Open a new tab...', input_schema: { /*...*/ } },
-      { name: 'closeTab', description: 'Close a tab...', input_schema: { /*...*/ } },
-      { name: 'switchTab', description: 'Switch to a different tab...', input_schema: { /*...*/ } },
-      { name: 'getAllTabs', description: 'Get info about all tabs...', input_schema: { /*...*/ } },
-      { name: 'createTabGroup', description: 'Create a tab group...', input_schema: { /*...*/ } },
-      { name: 'ungroupTabs', description: 'Remove tabs from a group...', input_schema: { /*...*/ } },
-      { name: 'fillForm', description: 'Fill multiple form fields...', input_schema: { /*...*/ } },
-      { name: 'waitForElement', description: 'Wait for an element...', input_schema: { /*...*/ } },
-      { name: 'goBack', description: 'Navigate back...', input_schema: { /*...*/ } },
-      { name: 'goForward', description: 'Navigate forward...', input_schema: { /*...*/ } },
-      { name: 'refresh', description: 'Refresh the page...', input_schema: { /*...*/ } },
-      { name: 'searchHistory', description: 'Search browser history...', input_schema: { /*...*/ } },
-      { name: 'getRecentHistory', description: 'Get recent history...', input_schema: { /*...*/ } },
-      { name: 'deleteHistoryItem', description: 'Delete a history item...', input_schema: { /*...*/ } },
-      { name: 'deleteHistoryRange', description: 'Delete a history range...', input_schema: { /*...*/ } },
-      { name: 'getVisitCount', description: 'Get visit count for a URL...', input_schema: { /*...*/ } }
+      {
+        name: 'click',
+        description: 'Click on an element. Use labelText for buttons or links identified by visible text.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            selector: { type: 'string', description: 'A specific CSS selector for the element.' },
+            labelText: { type: 'string', description: 'The visible text, aria-label, or placeholder of the element to click.' },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'type',
+        description: 'Type text into an input field, identified by its visible label, placeholder, or a specific selector.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            selector: { type: 'string', description: 'A specific CSS selector for the input field.' },
+            labelText: { type: 'string', description: 'The visible text of the label associated with the input, or the input\'s placeholder or aria-label.' },
+            text: { type: 'string', description: 'The text to type.' },
+            clear: { type: 'boolean', description: 'Clear existing text first (default: true).' },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: ['text']
+        }
+      },
+      // ... other tool definitions ...
     ];
   }
 
   async executeTool(toolName, args) {
     const tool = this.tools[toolName];
-    if (!tool) {
-      throw new Error(`Unknown tool: ${toolName}`);
-    }
+    if (!tool) throw new Error(`Unknown tool: ${toolName}`);
     const finalArgs = args && typeof args === 'object' ? args : {};
     return await tool(finalArgs);
   }
@@ -81,7 +85,7 @@ export class BrowserTools {
     return tab.id;
   }
 
-  // Tool implementations with full logic restored
+  // Tool implementations with NEW logic for click and type
 
   async navigate({ url, tabId }) {
     const targetTabId = await this.getActiveTabId(tabId);
@@ -89,29 +93,33 @@ export class BrowserTools {
     return { success: true, url, tabId: targetTabId };
   }
 
-  async click({ selector, text, tabId }) {
+  async click({ selector, labelText, tabId }) {
     const targetTabId = await this.getActiveTabId(tabId);
-    if ((!selector || typeof selector !== 'string') && (!text || typeof text !== 'string')) {
-      return { success: false, error: 'Either selector or text must be provided' };
+    if (!selector && !labelText) {
+      return { success: false, error: 'Either selector or labelText must be provided' };
     }
     try {
       const [result] = await browser.scripting.executeScript({
         target: { tabId: targetTabId },
-        func: (sel, txt) => {
+        func: (sel, label) => {
           let element = null;
-          if (txt) {
-            const clickableElements = document.querySelectorAll('a, button, input[type="button"], input[type="submit"], [role="button"]');
-            element = Array.from(clickableElements).find(el => el.textContent.trim().toLowerCase().includes(txt.toLowerCase()));
-          } else {
+          if (sel) {
             element = document.querySelector(sel);
+          } else if (label) {
+            const candidates = Array.from(document.querySelectorAll('a, button, input, [role="button"], [aria-label]'));
+            element = candidates.find(el => 
+              (el.textContent && el.textContent.trim().toLowerCase().includes(label.toLowerCase())) ||
+              (el.ariaLabel && el.ariaLabel.toLowerCase().includes(label.toLowerCase())) ||
+              (el.value && el.value.toLowerCase().includes(label.toLowerCase()))
+            );
           }
           if (element) {
             element.click();
-            return { success: true, clicked: sel || txt };
+            return { success: true, clicked: sel || label };
           }
           return { success: false, error: 'Element not found' };
         },
-        args: [selector, text]
+        args: [selector, labelText]
       });
       return result.result;
     } catch (error) {
@@ -119,13 +127,37 @@ export class BrowserTools {
     }
   }
 
-  async type({ selector, text, clear = true, tabId }) {
+  async type({ selector, labelText, text, clear = true, tabId }) {
     const targetTabId = await this.getActiveTabId(tabId);
+    if (!selector && !labelText) {
+      return { success: false, error: 'Either selector or labelText must be provided' };
+    }
     try {
       const [result] = await browser.scripting.executeScript({
         target: { tabId: targetTabId },
-        func: (sel, txt, clr) => {
-          const element = document.querySelector(sel);
+        func: (sel, label, txt, clr) => {
+          let element = null;
+          if (sel) {
+            element = document.querySelector(sel);
+          } else if (label) {
+            const candidates = Array.from(document.querySelectorAll('input, textarea, [aria-label], [placeholder]'));
+            element = candidates.find(el => 
+              (el.ariaLabel && el.ariaLabel.toLowerCase().includes(label.toLowerCase())) ||
+              (el.placeholder && el.placeholder.toLowerCase().includes(label.toLowerCase()))
+            );
+            // Fallback to finding an input near a label tag
+            if (!element) {
+              const labelEl = Array.from(document.querySelectorAll('label')).find(l => l.textContent.trim().toLowerCase().includes(label.toLowerCase()));
+              if (labelEl) {
+                const inputId = labelEl.getAttribute('for');
+                if (inputId) {
+                  element = document.getElementById(inputId);
+                } else {
+                  element = labelEl.querySelector('input, textarea');
+                }
+              }
+            }
+          }
           if (element) {
             element.focus();
             if (clr) element.value = '';
@@ -136,7 +168,7 @@ export class BrowserTools {
           }
           return { success: false, error: 'Element not found' };
         },
-        args: [selector, text, clear]
+        args: [selector, labelText, text, clear]
       });
       return result.result;
     } catch (error) {
@@ -144,6 +176,7 @@ export class BrowserTools {
     }
   }
 
+  // ... (rest of the tool implementations remain the same)
   async scroll({ direction, amount = 500, tabId }) {
     const targetTabId = await this.getActiveTabId(tabId);
     try {
@@ -175,6 +208,7 @@ export class BrowserTools {
 
   async getPageContent({ type, selector, tabId }) {
     const targetTabId = await this.getActiveTabId(tabId);
+    const finalType = ['text', 'html', 'title', 'url', 'links'].includes(type) ? type : 'text';
     try {
       const [result] = await browser.scripting.executeScript({
         target: { tabId: targetTabId },
@@ -192,7 +226,7 @@ export class BrowserTools {
           const content = getContent();
           return { success: true, type: contentType, content };
         },
-        args: [type, selector]
+        args: [finalType, selector]
       });
       return result.result;
     } catch (error) {
