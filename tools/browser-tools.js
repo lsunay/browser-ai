@@ -38,7 +38,18 @@ export class BrowserTools {
 
   getToolDefinitions() {
     return [
-      { name: 'navigate', description: 'Navigate to a URL...', input_schema: { /*...*/ } },
+      {
+        name: 'navigate',
+        description: 'Navigate to a URL...',
+        input_schema: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'The URL to navigate to.' },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: ['url']
+        }
+      },
       {
         name: 'click',
         description: 'Click on an element. Use labelText for buttons or links identified by visible text.',
@@ -67,7 +78,236 @@ export class BrowserTools {
           required: ['text']
         }
       },
-      // ... other tool definitions ...
+      {
+        name: 'scroll',
+        description: 'Scroll the page up or down.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            direction: { type: 'string', description: 'The direction to scroll: "up", "down", "top", or "bottom".' },
+            amount: { type: 'number', description: 'The amount to scroll in pixels (default: 500).' },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: ['direction']
+        }
+      },
+      {
+        name: 'screenshot',
+        description: 'Take a screenshot of the current page.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'getPageContent',
+        description: 'Get content from the current page.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', description: 'The type of content to retrieve: "text", "html", "title", "url", or "links".' },
+            selector: { type: 'string', description: 'Optional CSS selector to target specific elements.' },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'openTab',
+        description: 'Open a new tab.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'The URL to open in the new tab.' },
+            active: { type: 'boolean', description: 'Whether to activate the new tab (default: true).' }
+          },
+          required: ['url']
+        }
+      },
+      {
+        name: 'closeTab',
+        description: 'Close a tab.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabId: { type: 'number', description: 'The tab ID to close.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'switchTab',
+        description: 'Switch to a different tab.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabId: { type: 'number', description: 'The tab ID to switch to.' }
+          },
+          required: ['tabId']
+        }
+      },
+      {
+        name: 'createTabGroup',
+        description: 'Create a tab group.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabIds: { type: 'array', items: { type: 'number' }, description: 'Array of tab IDs to group.' },
+            title: { type: 'string', description: 'Title for the tab group.' },
+            color: { type: 'string', description: 'Color for the tab group (default: "grey").' }
+          },
+          required: ['tabIds']
+        }
+      },
+      {
+        name: 'ungroupTabs',
+        description: 'Ungroup tabs.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabIds: { type: 'array', items: { type: 'number' }, description: 'Array of tab IDs to ungroup.' }
+          },
+          required: ['tabIds']
+        }
+      },
+      {
+        name: 'fillForm',
+        description: 'Fill a form with provided data.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            fields: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  selector: { type: 'string', description: 'CSS selector for the input field.' },
+                  value: { type: 'string', description: 'Value to fill in the field.' }
+                },
+                required: ['selector', 'value']
+              },
+              description: 'Array of fields to fill.'
+            },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: ['fields']
+        }
+      },
+      {
+        name: 'waitForElement',
+        description: 'Wait for an element to appear on the page.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            selector: { type: 'string', description: 'CSS selector of the element to wait for.' },
+            timeout: { type: 'number', description: 'Timeout in milliseconds (default: 5000).' },
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: ['selector']
+        }
+      },
+      {
+        name: 'getAllTabs',
+        description: 'Get information about all tabs.',
+        input_schema: {
+          type: 'object',
+          properties: {},
+          required: []
+        }
+      },
+      {
+        name: 'goBack',
+        description: 'Navigate back in browser history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'goForward',
+        description: 'Navigate forward in browser history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'refresh',
+        description: 'Refresh the current page.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            tabId: { type: 'number', description: 'Optional tab ID.' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'searchHistory',
+        description: 'Search browser history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            text: { type: 'string', description: 'Text to search for in history.' },
+            maxResults: { type: 'number', description: 'Maximum number of results (default: 100).' }
+          },
+          required: ['text']
+        }
+      },
+      {
+        name: 'getRecentHistory',
+        description: 'Get recent browser history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            maxResults: { type: 'number', description: 'Maximum number of results (default: 50).' }
+          },
+          required: []
+        }
+      },
+      {
+        name: 'deleteHistoryItem',
+        description: 'Delete a specific item from browser history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'URL of the history item to delete.' }
+          },
+          required: ['url']
+        }
+      },
+      {
+        name: 'deleteHistoryRange',
+        description: 'Delete a range of items from browser history.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            startTime: { type: 'number', description: 'Start time for the range (timestamp).' },
+            endTime: { type: 'number', description: 'End time for the range (timestamp).' }
+          },
+          required: ['startTime', 'endTime']
+        }
+      },
+      {
+        name: 'getVisitCount',
+        description: 'Get visit count for a URL.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'URL to get visit count for.' }
+          },
+          required: ['url']
+        }
+      }
     ];
   }
 
