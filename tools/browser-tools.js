@@ -1,6 +1,9 @@
 // Browser Tools - All browser automation capabilities
+const chrome = globalThis.browser ?? globalThis.chrome;
+
 export class BrowserTools {
   constructor() {
+    this.supportsTabGroups = Boolean(chrome?.tabs?.group && chrome?.tabs?.ungroup && chrome?.tabGroups?.update);
     this.tools = this.initializeTools();
     this.sessionTabs = [];
     this.sessionTabGroups = [];
@@ -28,7 +31,7 @@ export class BrowserTools {
   }
 
   getToolDefinitions() {
-    return [
+    const definitions = [
       { name: 'navigate', description: 'Go to URL', input_schema: { type: 'object', properties: { url: { type: 'string' } }, required: ['url'] } },
       { name: 'click', description: 'Click element', input_schema: { type: 'object', properties: { selector: { type: 'string' }, text: { type: 'string' }, timeoutMs: { type: 'number', minimum: 250 } }, required: [] } },
       { name: 'type', description: 'Type text into element', input_schema: { type: 'object', properties: { selector: { type: 'string' }, text: { type: 'string' } }, required: ['selector', 'text'] } },
@@ -44,6 +47,10 @@ export class BrowserTools {
       { name: 'focusTab', description: 'Set which tab future actions target', input_schema: { type: 'object', properties: { tabId: { type: 'number' }, titleContains: { type: 'string' }, urlContains: { type: 'string' }, direction: { type: 'string', enum: ['next', 'previous'] } }, required: [] } },
       { name: 'describeSessionTabs', description: 'List the tabs selected for this automation session', input_schema: { type: 'object', properties: {}, required: [] } }
     ];
+    if (!this.supportsTabGroups) {
+      return definitions.filter(def => def.name !== 'groupTabs');
+    }
+    return definitions;
   }
 
   async executeTool(toolName, args) {
@@ -80,6 +87,7 @@ export class BrowserTools {
 
     // Don't disrupt existing user-created groups; only group ungrouped tabs we own
     if (!this.sessionTabs.length) return;
+    if (!this.supportsTabGroups) return;
 
     const tabsByWindow = new Map();
     this.sessionTabs.forEach(tab => {
@@ -114,6 +122,10 @@ export class BrowserTools {
 
   async clearSessionTabGroups() {
     if (!this.sessionTabGroups.length) return;
+    if (!this.supportsTabGroups) {
+      this.sessionTabGroups = [];
+      return;
+    }
     for (const group of this.sessionTabGroups) {
       try {
         if (group.tabIds?.length) {
@@ -657,6 +669,9 @@ export class BrowserTools {
   }
 
   async groupTabs({ tabIds, title, color = 'grey', ungroup = false }) {
+    if (!this.supportsTabGroups) {
+      return { success: false, error: 'Tab grouping is not supported in this browser.' };
+    }
     if (ungroup) {
       await chrome.tabs.ungroup(tabIds);
       return { success: true, ungrouped: tabIds };

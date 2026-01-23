@@ -1,5 +1,14 @@
 # Azzta Agent
 
+## Firefox-ready fork
+
+This repository is a Firefox-first build of Azzta Agent. Recent changes include:
+
+- Firefox WebExtensions manifest (`manifest.firefox.json`) and sidebar UI wiring.
+- Cross-browser runtime shim (`browser` vs `chrome`) in background, UI, tools, and content scripts.
+- Safe fallbacks when tab grouping APIs are unavailable in Firefox.
+- `onMessage` handler updated to avoid the Firefox “promised response went out of scope” error.
+
 Azzta Agent is a premium warm-paper inspired Chrome (Chromium) extension built for professionals and teams who want brand-safe browser automation. Every detail – from the tactile UI to the safety prompts – is tuned for production distribution, paid plans, and tight visual identity. The Live/History panes, profile manager (including vision routes and orchestrator tools), and compacted context allow you to confidently surface Azzta as a monetizable feature inside your workflow toolkit.
 
 ## Highlights
@@ -57,6 +66,7 @@ Azzta Agent is a premium warm-paper inspired Chrome (Chromium) extension built f
 
 ## Installation
 
+### Chrome (Chromium)
 1. Clone or download:
    ```bash
    git clone <repo-url>
@@ -65,6 +75,18 @@ Azzta Agent is a premium warm-paper inspired Chrome (Chromium) extension built f
 2. Ensure `icons/` contains `icon16.png`, `icon48.png`, `icon128.png` (optional but recommended).
 3. Open `chrome://extensions`, enable Developer Mode, and load the unpacked `browser-ai` directory.
 4. Pin the extension to the toolbar if desired.
+
+### Firefox
+1. Copy the Firefox manifest into place:
+   ```bash
+   cp manifest.firefox.json manifest.json
+   ```
+2. Open `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on", and select `manifest.json`.
+3. Click the toolbar icon to open the sidebar panel.
+
+Notes:
+- Firefox does not support tab groups; the `groupTabs` tool is hidden and session grouping is skipped.
+- The UI opens as a sidebar instead of a Chrome side panel.
 
 ## Configuration
 

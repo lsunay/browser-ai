@@ -2,6 +2,8 @@
 import { BrowserTools } from './tools/browser-tools.js';
 import { AIProvider } from './ai/provider.js';
 
+const chrome = globalThis.browser ?? globalThis.chrome;
+
 class BackgroundService {
   constructor() {
     this.browserTools = new BrowserTools();
@@ -14,14 +16,19 @@ class BackgroundService {
 
   init() {
     // Set up side panel behavior
-    chrome.sidePanel
-      .setPanelBehavior({ openPanelOnActionClick: true })
-      .catch((error) => console.error(error));
+    if (chrome.sidePanel?.setPanelBehavior) {
+      chrome.sidePanel
+        .setPanelBehavior({ openPanelOnActionClick: true })
+        .catch((error) => console.error(error));
+    } else if (chrome.sidebarAction?.open && chrome.action?.onClicked) {
+      chrome.action.onClicked.addListener(() => {
+        chrome.sidebarAction.open().catch((error) => console.error(error));
+      });
+    }
 
     // Listen for messages from side panel
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      this.handleMessage(message, sender, sendResponse);
-      return true; // Keep channel open for async response
+    chrome.runtime.onMessage.addListener((message, sender) => {
+      return this.handleMessage(message, sender);
     });
 
     // Listen for tab updates
@@ -32,20 +39,22 @@ class BackgroundService {
     });
   }
 
-  async handleMessage(message, sender, sendResponse) {
+  async handleMessage(message, sender) {
     try {
       switch (message.type) {
         case 'user_message':
           await this.processUserMessage(message.message, message.conversationHistory, message.selectedTabs || []);
-          break;
+          return { success: true, queued: true };
 
         case 'execute_tool':
-          const result = await this.browserTools.executeTool(message.tool, message.args);
-          sendResponse({ success: true, result });
-          break;
+          return {
+            success: true,
+            result: await this.browserTools.executeTool(message.tool, message.args)
+          };
 
         default:
           console.warn('Unknown message type:', message.type);
+          return { success: false, error: 'Unknown message type' };
       }
     } catch (error) {
       console.error('Error handling message:', error);
@@ -53,7 +62,7 @@ class BackgroundService {
         type: 'error',
         message: error.message
       });
-      sendResponse({ success: false, error: error.message });
+      return { success: false, error: error.message };
     }
   }
 

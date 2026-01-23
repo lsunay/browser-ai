@@ -1,4 +1,6 @@
 // Side Panel UI Controller
+const chrome = globalThis.browser ?? globalThis.chrome;
+
 class SidePanelUI {
   constructor() {
     this.elements = {

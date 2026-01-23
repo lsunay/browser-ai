@@ -1,5 +1,6 @@
 // Content Script - Runs in the context of web pages
 // This script can access the DOM and communicate with the background script
+const chrome = globalThis.browser ?? globalThis.chrome;
 
 class ContentScriptHandler {
   constructor() {
